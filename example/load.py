@@ -202,3 +202,6 @@ if __name__ == '__main__':
 
     # and now we can count the documents
     print(es.count(index='git')['count'], 'documents in index')
+
+    # finally we close
+    es.close()

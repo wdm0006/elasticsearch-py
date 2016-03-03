@@ -11,6 +11,7 @@ from .cat import CatClient
 from .nodes import NodesClient
 from .snapshot import SnapshotClient
 from .utils import query_params, _make_path, SKIP_IN_PATH
+from ..connection import Urllib3HttpConnection, RequestsHttpConnection
 
 logger = logging.getLogger('elasticsearch')
 
@@ -197,6 +198,37 @@ class Elasticsearch(object):
             body += '\n'
 
         return body
+
+    def __enter__(self):
+        """
+        """
+        return self
+
+    def __exit__(self, e_type, e_value, e_tb):
+        """
+        Call close to explicitly close connections on exit.
+        """
+
+        self.close()
+
+        # reraise any exceptions that may have occurred
+        if e_type is not None:
+            return False
+        else:
+            return True
+
+    def close(self):
+        """
+        Explicitly closes the connections in the connection pools.
+        """
+        for conn in self.transport.connection_pool.connections:
+            if isinstance(conn, Urllib3HttpConnection):
+                conn.pool.close()
+            elif isinstance(conn, RequestsHttpConnection):
+                conn.session.close()
+            else:
+                raise NotImplementedError('Cannot close connection of type %s' % (type(conn), ))
+        return True
 
     @query_params()
     def ping(self, params=None):
